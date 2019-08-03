@@ -70,7 +70,13 @@ class FackTube
         $this->options = array_merge($defaults, $options);
     }
 
-
+    /**
+     * Search for videos
+     *
+     * @param  string $query
+     * @param  string $pageToken
+     * @return array
+     */
     public function videos($query, $pageToken = null)
     {
         $params = [
@@ -196,6 +202,60 @@ class FackTube
 
 
         return $results;
+    }
+
+    /**
+     * Fetch information about a single video
+     *
+     * @param  [type] $videoID
+     * @return [type]
+     */
+    public function watch($videoID)
+    {
+        $http = $this->getHttpSession();
+        // Change the user agent for this endpoint
+        $http->options['useragent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36';
+
+        $body = $http->get("https://www.youtube.com/get_video_info?&video_id={$videoID}&asv=3&hl=en_US")->body;
+
+        parse_str($body, $video);
+
+        if (!isset($video['player_response'])) {
+            throw new \LogicException("Invalid response from endpoint!");
+        }
+
+        $playerResponse = json_decode($video['player_response'], true);
+
+        if (!isset($playerResponse['videoDetails'])) {
+            throw new \LogicException("No videoDetails found in player_response!");
+        }
+
+        // A structure for our data
+        $videoInfo = [
+            'title' => null,
+            'author' => null,
+            'channelId' => null,
+            'videoId' => null,
+            'shortDescription' => null,
+            'lengthSeconds' => 0,
+            'viewCount' => 0,
+            'keywords' => [],
+            'averageRating' => 0,
+        ];
+
+        // Loop through and store the values if present
+        foreach ($videoInfo as $key => $value) {
+            if (isset($playerResponse['videoDetails'][$key])) {
+                $videoInfo[$key] = $playerResponse['videoDetails'][$key];
+            }
+        }
+
+        // Manually add the thumbnail
+        $videoInfo['thumb'] = "https://i.ytimg.com/vi/{$videoID}/mqdefault.jpg";
+
+        r($videoInfo);
+
+        return $videoInfo;     
     }
 
     protected function request($host, array $params = [])
