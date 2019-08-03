@@ -253,8 +253,6 @@ class FackTube
         // Manually add the thumbnail
         $videoInfo['thumb'] = "https://i.ytimg.com/vi/{$videoID}/mqdefault.jpg";
 
-        r($videoInfo);
-
         return $videoInfo;     
     }
 
